@@ -1,14 +1,17 @@
 import axios from 'axios'
 import { toast } from 'react-toastify'
 
-const API = 'http://localhost:5000/api/auth' // backend later
+const API = 'http://localhost:8899/api/auth' // backend later
 
 export const login = (formData) => async (dispatch) => {
   try {
     dispatch({ type: 'AUTH_START' })
 
     const { data } = await axios.post(`${API}/login`, formData)
+    const maxAge = 7 * 24 * 60 * 60
+    document.cookie = `token=${data.token}; path=/; max-age=${maxAge}`;
 
+    
     localStorage.setItem('token', data.token)
 
     dispatch({
@@ -17,12 +20,16 @@ export const login = (formData) => async (dispatch) => {
     })
 
     toast.success('Login successful')
+
+    return data
   } catch (error) {
     dispatch({
       type: 'AUTH_FAIL',
       payload: error.response?.data?.message || 'Login failed'
     })
     toast.error('Login failed')
+    // throw so caller can handle
+    throw error
   }
 }
 
@@ -43,6 +50,8 @@ export const register = (formData) => async (dispatch) => {
 }
 
 export const logout = () => (dispatch) => {
+  // remove cookie
+  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
   localStorage.removeItem('token')
   dispatch({ type: 'LOGOUT' })
 }
